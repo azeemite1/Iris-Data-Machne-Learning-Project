@@ -1,0 +1,170 @@
+---
+title: "Iris Data Machine Learning"
+author: "Azeem Adeyemi"
+date: "2022-11-05"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+# Installing and Loading Packages
+## Caret Package - The caret package provides a consistent interface into hundreds of machine learning algorithms and provides useful convenience methods for data visualization, data resampling, model tuning and model comparison, among other features.
+
+## Load Caret library
+```{r Loading Caret}
+library(caret)
+```
+
+# Loading The Data
+## Iris Dataset: The dataset contains 150 observations of iris flowers. There are four columns of measurements of the flowers in centimeters. The fifth column is the species of the flower observed. All observed flowers belong to one of three species. More info here https://en.wikipedia.org/wiki/Iris_flower_data_set
+
+```{r Iris Dataset}
+data("iris")
+```
+
+### Renaming the df as "dataset"
+
+```{r Rename data frame}
+dataset <- iris
+```
+
+# Validation of Dataset
+## The dataset was splited  into two, 80% will be use to train our models and 20% that we will hold back as a validation dataset.
+
+```{r Dataset Validation}
+validation_index <- createDataPartition(dataset$Species, p=0.80, list = FALSE)
+```
+
+```{r Validation}
+validation <- dataset[-validation_index,]
+```
+
+
+```{r Validation_index Rename}
+dataset <- dataset[validation_index,]
+```
+### Comment
+
+We have training data in the *dataset variable* and a *validation set* - will be use later in the validation variable.
+
+### Note that we replaced our dataset variable with the 80% sample of the dataset. This was an attempt to keep the rest of the code simpler and readable.
+
+```{r dataset dimension}
+dim(dataset)
+```
+```{r dataset attribute}
+sapply(dataset, class)
+```
+### The class value is a factor; Species
+
+```{r Peak the Data}
+head(dataset)
+```
+```{r Class levels}
+levels(dataset$Species)
+```
+
+### In the result above, the class has 3 different labels and it is refer to as *a multi-class or a multinomial classification problem.* 
+### If there were two levels, it would be a binary classification problem.
+
+```{r Class Distribution}
+percentage <- prop.table(table(dataset$Species)) * 100
+```
+
+```{r Column Binding}
+cbind(frequency=table(dataset$Species), percentage=percentage)
+```
+
+# Dataset Summary
+```{r dataset Summary}
+summary(dataset)
+```
+```{r}
+plot(dataset)
+```
+```{r}
+ggplot(data = dataset) +  geom_bar(mapping = aes(x = Species, fill = Species))
+```
+```{r}
+x <- dataset[, 1:4]
+y <- dataset[,5]
+```
+
+```{r}
+featurePlot(x=x, y=y, plot = "ellipse")
+```
+
+```{r}
+featurePlot(x=x, y=y, plot = "box")
+```
+
+
+# Evaluating Algorithms
+## Test Harness - Spliting the dataset into 10 parts.
+
+```{r}
+control <- trainControl(method = "cv", number = 10)
+metric <- "Accuracy"
+```
+
+# Linear Discriminat Analysis (LDA)
+
+```{r LDA}
+set.seed(8)
+M.lda <- train(Species~., data = dataset, method="lda", metric=metric, trControl=control)
+```
+
+# Classification and Regression Trees (CART)
+
+```{r}
+set.seed(8)
+M.cart <- train(Species~., data = dataset, method="rpart", metric=metric, trControl=control)
+```
+
+# k-Nearest Neighbours (kNN)
+
+```{r}
+set.seed(8)
+M.knn <- train(Species~., data = dataset, method="knn", metric=metric, trControl=control)
+```
+
+# Support Vector Machines (SVM)
+```{r}
+set.seed(8)
+M.svm <- train(Species~., data = dataset, method="svmRadial", metric=metric, trControl=control)
+```
+
+# Random Forest (RF)
+```{r}
+set.seed(8)
+M.rf <- train(Species~., data = dataset, method="rf", metric=metric, trControl=control)
+```
+
+# Select Best Model
+
+```{r Summary of Model}
+results <- resamples(list(lda=M.lda, cart=M.cart, knn=M.knn, svm=M.svm,rf=M.rf))
+summary(results)
+```
+
+```{r Compare accuracy of models}
+dotplot(results)
+```
+```{r Summarize Best Model}
+print(M.lda)
+```
+### The LDA was the most accurate model.
+
+# Predictions
+### This will give the accuracy of the model against the validation set - 20%
+
+```{r Estimate LDA on the validation dataset}
+predictions <- predict(M.lda, validation)
+confusionMatrix(predictions, validation$Species)
+```
+
+
+
+# END
+### Azeem Adeyemi
+
